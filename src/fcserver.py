@@ -55,7 +55,6 @@ class FadecandyServer:
             logging.info('Stopped fcserver')
 
     def __repr__(self):
-        # TODO: Make better repr for FadecandyServer
         if self._server_running:
             end = ' RUNNING'
         else:
