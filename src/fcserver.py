@@ -29,8 +29,8 @@ class FadecandyServer:
                 server = 'fcserver-osx'
             else:
                 server = 'fcserver-rpi'
-            logging.info(f'Started {server}')
             _fcserver_proc = subprocess.Popen(ROOT_DIR + '/bin/' + server)
+            logging.info(f'Started {server}')
             return _fcserver_proc
 
         if not self._server_running:
@@ -49,9 +49,10 @@ class FadecandyServer:
         """
         Stop the Fadecandy server.
         """
-        self._fcserver_proc.terminate()
-        self._server_running = False
-        logging.info('Stopped fcserver')
+        if self._server_running:
+            self._fcserver_proc.terminate()
+            self._server_running = False
+            logging.info('Stopped fcserver')
 
     def __repr__(self):
         # TODO: Make better repr for FadecandyServer
