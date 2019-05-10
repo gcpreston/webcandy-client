@@ -87,10 +87,12 @@ if __name__ == '__main__':
     cmd_port = cmd_args.port or 6543
 
     # get access token from username and password
-    response = requests.post(f'http://{cmd_host}:5000/api/token',
+    response = requests.post(f'http://{cmd_host}/api/token',
                              json={'username': cmd_args.username,
                                    'password': cmd_args.password})
     token = response.json()['token']
+
+    logging.info(f'Using token {token}')
 
     # create and start Fadecandy server
     fc_server = FadecandyServer()
