@@ -38,7 +38,7 @@ class FadecandyServer:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 result = s.connect_ex(('127.0.0.1', 7890))
 
-            if result == 10061:  # nothing running
+            if result in {10061, 111}:  # nothing running
                 self._fcserver_proc = asyncio.run(_go())
                 self._server_running = True
                 atexit.register(self.stop)  # stop fcserver on exit
