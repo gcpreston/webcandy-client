@@ -79,15 +79,18 @@ if __name__ == '__main__':
                         help='the address of the server to connect to'
                              '(default: 127.0.0.1)')
     parser.add_argument('--port', metavar='PORT', type=int,
-                        help='the port the server is running on'
+                        help='the port the proxy server is running on'
                              '(default: 6543)')
+    parser.add_argument('--app-port', metavar='PORT', type=int,
+                        help='the port the Webcandy app is running on')
     cmd_args = parser.parse_args()
 
     cmd_host = cmd_args.host or '127.0.0.1'
     cmd_port = cmd_args.port or 6543
+    cmd_app_port = cmd_args.app_port or 5000
 
     # get access token from username and password
-    response = requests.post(f'http://{cmd_host}/api/token',
+    response = requests.post(f'http://{cmd_host}:{cmd_app_port}/api/token',
                              json={'username': cmd_args.username,
                                    'password': cmd_args.password})
     token = response.json()['token']
