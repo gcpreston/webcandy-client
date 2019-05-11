@@ -41,7 +41,7 @@ class WebcandyClientProtocol(asyncio.Protocol):
         patterns it has available.
         """
         peername = transport.get_extra_info('peername')
-        logging.info(f'Connected to server {peername}')
+        logging.info(f'Connected to server {":".join(map(str, peername))}')
         patterns = _get_pattern_names()
         data = json.dumps(
             {'token': self._token, 'patterns': patterns})
@@ -92,7 +92,7 @@ if __name__ == '__main__':
                                    'password': cmd_args.password})
     token = response.json()['token']
 
-    logging.info(f'Using token {token}')
+    logging.debug(f'Using token {token}')
 
     # create and start Fadecandy server
     fc_server = FadecandyServer()
