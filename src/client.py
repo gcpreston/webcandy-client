@@ -1,3 +1,4 @@
+import sys
 import os
 import asyncio
 import json
@@ -93,8 +94,12 @@ if __name__ == '__main__':
     response = requests.post(f'http://{cmd_host}:{cmd_app_port}/api/token',
                              json={'username': cmd_args.username,
                                    'password': cmd_args.password})
-    token = response.json()['token']
+    if response.status_code != 200:
+        logging.error(f'Received status {response.status_code}: '
+                      f'{response.content.decode("utf-8")}')
+        sys.exit(1)
 
+    token = response.json()['token']
     logging.debug(f'Using token {token}')
 
     # create and start Fadecandy server
