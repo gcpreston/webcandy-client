@@ -30,9 +30,10 @@ class WebcandyClientProtocol(asyncio.Protocol):
     Protocol describing communication of a Webcandy client.
     """
 
-    def __init__(self, access_token: str, control: Controller,
+    def __init__(self, access_token: str, client_id: str, control: Controller,
                  on_con_lost: asyncio.Future):
         self._token = access_token
+        self._id = client_id
         self._control = control
         self._on_con_lost = on_con_lost
 
@@ -45,9 +46,10 @@ class WebcandyClientProtocol(asyncio.Protocol):
         logging.info(f'Connected to server {":".join(map(str, peername))}')
         patterns = _get_pattern_names()
         data = json.dumps(
-            {'token': self._token, 'patterns': patterns})
+            {'token': self._token, 'client_id': self._id, 'patterns': patterns})
         transport.write(data.encode())
-        logging.info(f'Sent token and patterns: {patterns}')
+        logging.info(
+            f'Sent token, client_id: {self._id!r}, and patterns: {patterns}')
 
     def data_received(self, data: bytes) -> None:
         """
@@ -76,6 +78,7 @@ if __name__ == '__main__':
         description='Webcandy client to connect to a running Webcandy server.')
     parser.add_argument('username', help='the username to log in with')
     parser.add_argument('password', help='the password to log in with')
+    parser.add_argument('client_id', help='the ID to assign this client')
     parser.add_argument('--host', metavar='ADDRESS',
                         help='the address of the server to connect to'
                              '(default: 127.0.0.1)')
@@ -112,7 +115,8 @@ if __name__ == '__main__':
         on_con_lost = loop.create_future()
 
         transport, protocol = await loop.create_connection(
-            lambda: WebcandyClientProtocol(token, Controller(), on_con_lost),
+            lambda: WebcandyClientProtocol(token, cmd_args.client_id,
+                                           Controller(), on_con_lost),
             cmd_host, cmd_port)
 
         # wait until the protocol signals that the connection is lost, then
