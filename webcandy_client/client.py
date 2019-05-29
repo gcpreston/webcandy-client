@@ -9,9 +9,9 @@ import argparse
 
 from typing import List
 
-from controller import Controller
-from fcserver import FadecandyServer
-from definitions import OPCLIB_DIR
+from .controller import Controller
+from .fcserver import FadecandyServer
+from .definitions import OPCLIB_DIR
 
 
 def _get_pattern_names() -> List[str]:
