@@ -5,7 +5,7 @@ import asyncio
 import atexit
 import logging
 
-from definitions import ROOT_DIR
+from webcandy_client.definitions import ROOT_DIR
 
 
 class FadecandyServer:

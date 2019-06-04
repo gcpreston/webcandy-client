@@ -9,9 +9,9 @@ import argparse
 
 from typing import List
 
-from controller import Controller
-from fcserver import FadecandyServer
-from definitions import OPCLIB_DIR
+from webcandy_client.controller import Controller
+from webcandy_client.fcserver import FadecandyServer
+from webcandy_client.definitions import OPCLIB_DIR
 
 
 def _get_pattern_names() -> List[str]:
@@ -94,9 +94,15 @@ if __name__ == '__main__':
     cmd_app_port = cmd_args.app_port or 5000
 
     # get access token from username and password
-    response = requests.post(f'http://{cmd_host}:{cmd_app_port}/api/token',
-                             json={'username': cmd_args.username,
-                                   'password': cmd_args.password})
+    try:
+        response = requests.post(f'http://{cmd_host}:{cmd_app_port}/api/token',
+                                 json={'username': cmd_args.username,
+                                       'password': cmd_args.password})
+    except requests.exceptions.ConnectionError:
+        logging.error('Failed to reach the Webcandy API. Please check the '
+                      '--host and --app-port options.')
+        sys.exit(1)
+
     if response.status_code != 200:
         logging.error(f'Received status {response.status_code}: '
                       f'{response.content.decode("utf-8")}')
@@ -114,10 +120,16 @@ if __name__ == '__main__':
         loop = asyncio.get_running_loop()
         on_con_lost = loop.create_future()
 
-        transport, protocol = await loop.create_connection(
-            lambda: WebcandyClientProtocol(token, cmd_args.client_id,
-                                           Controller(), on_con_lost),
-            cmd_host, cmd_port)
+        try:
+            transport, protocol = await loop.create_connection(
+                lambda: WebcandyClientProtocol(token, cmd_args.client_id,
+                                               Controller(), on_con_lost),
+                cmd_host, cmd_port)
+        except ConnectionRefusedError:
+            logging.error('Failed to connected to the proxy server. Please '
+                          'check that the proxy server is running on the port '
+                          'specified in the --port option.')
+            sys.exit(1)
 
         # wait until the protocol signals that the connection is lost, then
         # close the transport stop the Fadecandy server
