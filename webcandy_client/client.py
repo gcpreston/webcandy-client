@@ -63,7 +63,8 @@ class WebcandyClientProtocol(asyncio.Protocol):
             logging.debug(f'Received JSON: {parsed}')
             self._control.run(**parsed)
         except json.decoder.JSONDecodeError:
-            logging.info(f'Received text: {data}')
+            # TODO: Better formatting of messages sent from server
+            logging.info(f'Received text: {data.decode()}')
 
     def connection_lost(self, exc) -> None:
         logging.info('The server closed the connection')
