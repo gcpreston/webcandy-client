@@ -10,8 +10,30 @@ Color = NewType('Color', Tuple[float, float, float])
 
 # IDEA
 # Lighting configurations are iterators that generate the next list of pixels
-# to put onto an LED strip. The run method steps through the iterator and does
-# the work of pushing the generated list to the Fadecandy client.
+# to put onto an LED strip. These are passed to a runner that iterates through
+# the lighting configuration in a specified manner and sends the pixels to a
+# Fadecandy server instance
+
+class LightConfigRunner:
+    """
+    Class for iterating through a ``LightConfig`` and pushing the pixels to a
+    running Fadecandy server.
+    """
+
+    def __init__(self, config: 'LightConfig', num_leds: int = 512,
+                 host: str = 'localhost', port: int = 7890):
+        self.config = config
+        self.num_leds = num_leds
+        self.host = host
+        self.port = port
+
+    def run(self) -> None:
+        """
+        Run the current lighting configuration.
+        """
+        # TODO: How to let different LightConfig subclasses control the way
+        #   they are run?
+        pass
 
 
 # TODO: Add ability to control brightness
