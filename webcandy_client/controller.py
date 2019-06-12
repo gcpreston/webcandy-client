@@ -50,8 +50,7 @@ class Controller:
         """
         Terminate the current process and start a new one. ``kwargs`` are passed
         to ``multiprocessing.Process``.
-        :param kw
-        args: keyword arguments to specify the new process
+        :param kwargs: keyword arguments to specify the new process
         """
         self._terminate_current_proc()
         self._current_proc = multiprocessing.Process(**kwargs)
