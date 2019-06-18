@@ -6,6 +6,7 @@ import requests
 import signal
 import logging
 import argparse
+import websockets
 
 from typing import List
 
@@ -25,7 +26,7 @@ def _get_pattern_names() -> List[str]:
                            os.listdir(OPCLIB_DIR + '/patterns'))))
 
 
-class WebcandyClientProtocol(asyncio.Protocol):
+class WebcandyClientProtocolOld(asyncio.Protocol):
     """
     Protocol describing communication of a Webcandy client.
     """
@@ -92,6 +93,7 @@ if __name__ == '__main__':
 
     cmd_host = cmd_args.host or '127.0.0.1'
     cmd_port = cmd_args.port or 6543
+    cmd_client_id = cmd_args.client_id
     cmd_app_port = cmd_args.app_port or 5000
 
     # get access token from username and password
@@ -116,15 +118,17 @@ if __name__ == '__main__':
     fc_server = FadecandyServer()
     fc_server.start()
 
-    # set up WebcandyClientProtocol
+    controller = Controller()
+
+    # set up WebcandyClientProtocolOld
     async def start_protocol():
         loop = asyncio.get_running_loop()
         on_con_lost = loop.create_future()
 
         try:
             transport, protocol = await loop.create_connection(
-                lambda: WebcandyClientProtocol(token, cmd_args.client_id,
-                                               Controller(), on_con_lost),
+                lambda: WebcandyClientProtocolOld(token, cmd_args.client_id,
+                                                  Controller(), on_con_lost),
                 cmd_host, cmd_port)
         except ConnectionRefusedError:
             logging.error('Failed to connected to the proxy server. Please '
@@ -141,5 +145,34 @@ if __name__ == '__main__':
             fc_server.stop()
 
 
+    async def start_client():
+        async with websockets.connect(
+                f'ws://{cmd_host}:{cmd_port}') as websocket:
+            logging.info(f'Connected to server {":".join(map(str, websocket.remote_address))}')
+
+            patterns = _get_pattern_names()
+            data = json.dumps(
+                {'token': token, 'client_id': cmd_client_id,
+                 'patterns': patterns})
+            await websocket.send(data)
+
+            logging.info(
+                f'Sent token, client_id: {cmd_client_id!r}, and patterns: {patterns}')
+
+            async for message in websocket:
+                try:
+                    parsed = json.loads(message)
+                    logging.debug(f'Received JSON: {parsed}')
+                    controller.run(**parsed)
+                except json.decoder.JSONDecodeError:
+                    # TODO: Better formatting of messages sent from server
+                    logging.info(f'Received text: {message}')
+
+
     signal.signal(signal.SIGINT, signal.SIG_DFL)  # allow keyboard interrupt
-    asyncio.run(start_protocol())  # run the client
+    # asyncio.run(start_protocol())  # run the client
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    loop.run_until_complete(start_client())
