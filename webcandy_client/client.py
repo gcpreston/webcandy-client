@@ -148,7 +148,8 @@ if __name__ == '__main__':
     async def start_client():
         async with websockets.connect(
                 f'ws://{cmd_host}:{cmd_port}') as websocket:
-            logging.info(f'Connected to server {":".join(map(str, websocket.remote_address))}')
+            logging.info(f'Connected to server '
+                         f'{":".join(map(str, websocket.remote_address))}')
 
             patterns = _get_pattern_names()
             data = json.dumps(
@@ -157,16 +158,27 @@ if __name__ == '__main__':
             await websocket.send(data)
 
             logging.info(
-                f'Sent token, client_id: {cmd_client_id!r}, and patterns: {patterns}')
+                f'Sent token, client_id: {cmd_client_id!r}, '
+                f'and patterns: {patterns}')
 
-            async for message in websocket:
-                try:
-                    parsed = json.loads(message)
-                    logging.debug(f'Received JSON: {parsed}')
-                    controller.run(**parsed)
-                except json.decoder.JSONDecodeError:
-                    # TODO: Better formatting of messages sent from server
-                    logging.info(f'Received text: {message}')
+            try:
+                async for message in websocket:
+                    try:
+                        parsed = json.loads(message)
+                        logging.debug(f'Received JSON: {parsed}')
+                        controller.run(**parsed)
+                    except json.decoder.JSONDecodeError:
+                        # TODO: Better formatting of messages sent from server
+                        logging.info(f'Received text: {message}')
+            except websockets.ConnectionClosed as err:
+                message = (
+                    f'Server closed connection, code: {err.code}, '
+                    f'reason: {err.reason or "no reason given"}'
+                )
+                if err.code in {1000, 1001}:
+                    logging.info(message)
+                else:
+                    logging.error(message)
 
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)  # allow keyboard interrupt
