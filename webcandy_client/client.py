@@ -15,7 +15,27 @@ from webcandy_client.fcserver import FadecandyServer
 from webcandy_client.definitions import OPCLIB_DIR
 
 
-def _get_pattern_names() -> List[str]:
+def get_argument_parser() -> argparse.ArgumentParser:
+    """
+    Generate the command-line argument parser.
+    """
+    p = argparse.ArgumentParser(
+        description='Webcandy client to connect to a running Webcandy server.')
+    p.add_argument('username', help='the username to log in with')
+    p.add_argument('password', help='the password to log in with')
+    p.add_argument('client_id', help='the ID to assign this client')
+    p.add_argument('--host', metavar='ADDRESS',
+                   help='the address of the server to connect to'
+                        '(default: 127.0.0.1)')
+    p.add_argument('--port', metavar='PORT', type=int,
+                   help='the port the proxy server is running on'
+                        '(default: 6543)')
+    p.add_argument('--app-port', metavar='PORT', type=int,
+                   help='the port the Webcandy app is running on')
+    return p
+
+
+def get_pattern_names() -> List[str]:
     """
     Get the names of available Fadecandy lighting patterns.
     :return: a list of names of existing patterns
@@ -26,69 +46,56 @@ def _get_pattern_names() -> List[str]:
                            os.listdir(OPCLIB_DIR + '/patterns'))))
 
 
-class WebcandyClientProtocolOld(asyncio.Protocol):
+async def start_client(
+        host: str,
+        port: int,
+        token: str,
+        client_id: str,
+        patterns: List[str]) -> None:
     """
-    Protocol describing communication of a Webcandy client.
+    Initiate the client connection.
     """
 
-    def __init__(self, access_token: str, client_id: str, control: Controller,
-                 on_con_lost: asyncio.Future):
-        self._token = access_token
-        self._id = client_id
-        self._control = control
-        self._on_con_lost = on_con_lost
+    async with websockets.connect(
+            f'ws://{host}:{port}') as websocket:
+        logging.info(f'Connected to server '
+                     f'{":".join(map(str, websocket.remote_address))}')
 
-    def connection_made(self, transport: asyncio.Transport) -> None:
-        """
-        When a connection is made, the send the server JSON data describing the
-        patterns it has available.
-        """
-        peername = transport.get_extra_info('peername')
-        logging.info(f'Connected to server {":".join(map(str, peername))}')
-        patterns = _get_pattern_names()
         data = json.dumps(
-            {'token': self._token, 'client_id': self._id, 'patterns': patterns})
-        transport.write(data.encode())
+            {'token': token, 'client_id': cmd_client_id,
+             'patterns': patterns})
+        await websocket.send(data)
+
         logging.info(
-            f'Sent token, client_id: {self._id!r}, and patterns: {patterns}')
+            f'Sent token, client_id: {client_id!r}, and patterns: {patterns}')
 
-    def data_received(self, data: bytes) -> None:
-        """
-        Received data is assumed to be JSON describing a lighting configuration.
-        Upon receiving data, attempt to decode it as JSON, and if successful,
-        pass the parsed data to a ``Controller`` to attempt to run the described
-        lighting configuration.
-        """
+        controller = Controller()
+
         try:
-            parsed = json.loads(data.decode())
-            logging.debug(f'Received JSON: {parsed}')
-            self._control.run(**parsed)
-        except json.decoder.JSONDecodeError:
-            # TODO: Better formatting of messages sent from server
-            logging.info(f'Received text: {data.decode()}')
-
-    def connection_lost(self, exc) -> None:
-        logging.info('The server closed the connection')
-        self._on_con_lost.set_result(True)
+            async for message in websocket:
+                try:
+                    parsed = json.loads(message)
+                    logging.debug(f'Received JSON: {parsed}')
+                    controller.run(**parsed)
+                except json.decoder.JSONDecodeError:
+                    # TODO: Better formatting of messages sent from server
+                    logging.info(f'Received text: {message}')
+        except websockets.ConnectionClosed as err:
+            message = (
+                f'Server closed connection, code: {err.code}, '
+                f'reason: {err.reason or "no reason given"}'
+            )
+            if err.code in {1000, 1001}:
+                logging.info(message)
+            else:
+                logging.error(message)
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO,
                         format='[%(asctime)s] %(levelname)s: %(message)s')
 
-    parser = argparse.ArgumentParser(
-        description='Webcandy client to connect to a running Webcandy server.')
-    parser.add_argument('username', help='the username to log in with')
-    parser.add_argument('password', help='the password to log in with')
-    parser.add_argument('client_id', help='the ID to assign this client')
-    parser.add_argument('--host', metavar='ADDRESS',
-                        help='the address of the server to connect to'
-                             '(default: 127.0.0.1)')
-    parser.add_argument('--port', metavar='PORT', type=int,
-                        help='the port the proxy server is running on'
-                             '(default: 6543)')
-    parser.add_argument('--app-port', metavar='PORT', type=int,
-                        help='the port the Webcandy app is running on')
+    parser = get_argument_parser()
     cmd_args = parser.parse_args()
 
     cmd_host = cmd_args.host or '127.0.0.1'
@@ -111,80 +118,16 @@ if __name__ == '__main__':
                       f'{response.content.decode("utf-8")}')
         sys.exit(1)
 
-    token = response.json()['token']
-    logging.debug(f'Using token {token}')
+    access_token = response.json()['token']
+    logging.debug(f'Using token {access_token}')
 
-    # create and start Fadecandy server
     fc_server = FadecandyServer()
-    fc_server.start()
-
-    controller = Controller()
-
-    # set up WebcandyClientProtocolOld
-    async def start_protocol():
-        loop = asyncio.get_running_loop()
-        on_con_lost = loop.create_future()
-
-        try:
-            transport, protocol = await loop.create_connection(
-                lambda: WebcandyClientProtocolOld(token, cmd_args.client_id,
-                                                  Controller(), on_con_lost),
-                cmd_host, cmd_port)
-        except ConnectionRefusedError:
-            logging.error('Failed to connected to the proxy server. Please '
-                          'check that the proxy server is running on the port '
-                          'specified in the --port option.')
-            sys.exit(1)
-
-        # wait until the protocol signals that the connection is lost, then
-        # close the transport stop the Fadecandy server
-        try:
-            await on_con_lost
-        finally:
-            transport.close()
-            fc_server.stop()
-
-
-    async def start_client():
-        async with websockets.connect(
-                f'ws://{cmd_host}:{cmd_port}') as websocket:
-            logging.info(f'Connected to server '
-                         f'{":".join(map(str, websocket.remote_address))}')
-
-            patterns = _get_pattern_names()
-            data = json.dumps(
-                {'token': token, 'client_id': cmd_client_id,
-                 'patterns': patterns})
-            await websocket.send(data)
-
-            logging.info(
-                f'Sent token, client_id: {cmd_client_id!r}, '
-                f'and patterns: {patterns}')
-
-            try:
-                async for message in websocket:
-                    try:
-                        parsed = json.loads(message)
-                        logging.debug(f'Received JSON: {parsed}')
-                        controller.run(**parsed)
-                    except json.decoder.JSONDecodeError:
-                        # TODO: Better formatting of messages sent from server
-                        logging.info(f'Received text: {message}')
-            except websockets.ConnectionClosed as err:
-                message = (
-                    f'Server closed connection, code: {err.code}, '
-                    f'reason: {err.reason or "no reason given"}'
-                )
-                if err.code in {1000, 1001}:
-                    logging.info(message)
-                else:
-                    logging.error(message)
-
+    fc_server.start()  # won't start if another instance is already running
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)  # allow keyboard interrupt
-    # asyncio.run(start_protocol())  # run the client
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-
-    loop.run_until_complete(start_client())
+    loop.run_until_complete(
+        start_client(cmd_host, cmd_port, access_token, cmd_client_id,
+                     get_pattern_names()))
