@@ -4,5 +4,8 @@ setup(
     name='webcandy-client',
     packages=['webcandy_client'],
     zip_safe=False,
-    install_requires=['requests']
+    install_requires=[
+        'requests',
+        'websockets'
+    ]
 )
