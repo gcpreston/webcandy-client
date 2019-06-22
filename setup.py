@@ -7,5 +7,11 @@ setup(
     install_requires=[
         'requests',
         'websockets'
-    ]
+    ],
+    entry_points={
+        'console_scripts': [
+            'wc-client = webcandy_client.client:main',
+            'wc-controller = webcandy_client.controller:main'
+        ]
+    }
 )
