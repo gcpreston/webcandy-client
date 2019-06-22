@@ -35,17 +35,6 @@ class Controller:
         logging.info(f'Attempting to run configuration: {kwargs}')
         self._set_current_proc(target=_execute, kwargs=kwargs)
 
-    def run_json(self, fp: str) -> None:
-        """
-        Run a lighting configuration specified in a JSON file.
-        :param fp: path to the configuration file
-        """
-        with open(fp) as file:
-            config = json.load(file)
-
-        logging.info(f'Attempting to run configuration: {config}')
-        self._set_current_proc(target=_execute, kwargs=config)
-
     def _set_current_proc(self, **kwargs) -> None:
         """
         Terminate the current process and start a new one. ``kwargs`` are passed
@@ -70,23 +59,37 @@ class Controller:
         return False
 
 
-def main():
-    logging.basicConfig(level=logging.DEBUG,
-                        format='[%(asctime)s] %(levelname)s: %(message)s')
-
-    # Allow the direct, local running of lighting configurations
+def get_argument_parser() -> argparse.ArgumentParser:
+    """
+    Generate the command-line argument parser.
+    """
     parser = argparse.ArgumentParser(
         description='Offline controller for Fadecandy server.')
     parser.add_argument('-f', '--file', metavar='PATH',
                         help='path of JSON file specifying light configuration')
-    cmd_args = parser.parse_args()
+    return parser
 
-    if cmd_args.file:
+
+def main():
+    logging.basicConfig(level=logging.DEBUG,
+                        format='[%(asctime)s] %(levelname)s: %(message)s')
+
+    parser = get_argument_parser()
+    args = parser.parse_args()
+
+    config = dict()
+    if args.file:
+        with open(args.file) as file:
+            config = json.load(file)
+
+    # TODO: Parse other arbitrary arguments and add them to config
+
+    if config:
         server = FadecandyServer()
         server.start()  # start Fadecandy server if not already running
 
         control = Controller()
-        control.run_json(cmd_args.file)
+        control.run(**config)
         # TODO: Fix conflict when mixing dynamic configs across a separate
         #     client and controller processes
     else:

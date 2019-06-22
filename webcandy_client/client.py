@@ -15,26 +15,6 @@ from webcandy_client.fcserver import FadecandyServer
 from webcandy_client.definitions import OPCLIB_DIR
 
 
-def get_argument_parser() -> argparse.ArgumentParser:
-    """
-    Generate the command-line argument parser.
-    """
-    p = argparse.ArgumentParser(
-        description='Webcandy client to connect to a running Webcandy server.')
-    p.add_argument('username', help='the username to log in with')
-    p.add_argument('password', help='the password to log in with')
-    p.add_argument('client_id', help='the ID to assign this client')
-    p.add_argument('--host', metavar='ADDRESS',
-                   help='the address of the server to connect to'
-                        '(default: 127.0.0.1)')
-    p.add_argument('--port', metavar='PORT', type=int,
-                   help='the port the proxy server is running on'
-                        '(default: 6543)')
-    p.add_argument('--app-port', metavar='PORT', type=int,
-                   help='the port the Webcandy app is running on')
-    return p
-
-
 def get_pattern_names() -> List[str]:
     """
     Get the names of available Fadecandy lighting patterns.
@@ -55,14 +35,13 @@ async def start_client(
     """
     Initiate the client connection.
     """
+    ws_addr = f'ws://{host}:{port}'
 
-    async with websockets.connect(
-            f'ws://{host}:{port}') as websocket:
-        logging.info(f'Connected to server '
-                     f'{":".join(map(str, websocket.remote_address))}')
+    async with websockets.connect(ws_addr) as websocket:
+        logging.info(f'Connected to server {ws_addr}')
 
         data = json.dumps(
-            {'token': token, 'client_id': cmd_client_id,
+            {'token': token, 'client_id': client_id,
              'patterns': patterns})
         await websocket.send(data)
 
@@ -91,23 +70,44 @@ async def start_client(
                 logging.error(message)
 
 
+def get_argument_parser() -> argparse.ArgumentParser:
+    """
+    Generate the command-line argument parser.
+    """
+    p = argparse.ArgumentParser(
+        description='Webcandy client to connect to a running Webcandy server.')
+    p.add_argument('username', help='the username to log in with')
+    p.add_argument('password', help='the password to log in with')
+    p.add_argument('client_id', help='the ID to assign this client')
+    p.add_argument('--host', metavar='ADDRESS',
+                   help='the address of the server to connect to'
+                        '(dev default: 127.0.0.1)')
+    p.add_argument('--port', metavar='PORT', type=int,
+                   help='the port the Webcandy proxy server is running on'
+                        '(default: 6543)')
+    p.add_argument('--app-port', metavar='PORT', type=int,
+                   help='the port the Webcandy app is running on '
+                        '(dev default: 5000)')
+    return p
+
+
 def main():
     logging.basicConfig(level=logging.INFO,
                         format='[%(asctime)s] %(levelname)s: %(message)s')
 
     parser = get_argument_parser()
-    cmd_args = parser.parse_args()
+    args = parser.parse_args()
 
-    cmd_host = cmd_args.host or '127.0.0.1'
-    cmd_port = cmd_args.port or 6543
-    cmd_client_id = cmd_args.client_id
-    cmd_app_port = cmd_args.app_port or 5000
+    host = args.host or '127.0.0.1'
+    port = args.port or 6543
+    client_id = args.client_id
+    app_port = args.app_port or 5000
 
     # get access token from username and password
     try:
-        response = requests.post(f'http://{cmd_host}:{cmd_app_port}/api/token',
-                                 json={'username': cmd_args.username,
-                                       'password': cmd_args.password})
+        response = requests.post(f'http://{host}:{app_port}/api/token',
+                                 json={'username': args.username,
+                                       'password': args.password})
     except requests.exceptions.ConnectionError:
         logging.error('Failed to reach the Webcandy API. Please check the '
                       '--host and --app-port options.')
@@ -129,7 +129,7 @@ def main():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(
-        start_client(cmd_host, cmd_port, access_token, cmd_client_id,
+        start_client(host, port, access_token, client_id,
                      get_pattern_names()))
 
 
