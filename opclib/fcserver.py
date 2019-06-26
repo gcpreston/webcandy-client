@@ -1,11 +1,10 @@
+import os
 import sys
 import subprocess
 import socket
 import asyncio
 import atexit
 import logging
-
-from webcandy_client.definitions import ROOT_DIR
 
 
 class FadecandyServer:
@@ -29,7 +28,9 @@ class FadecandyServer:
                 server = 'fcserver-osx'
             else:
                 server = 'fcserver-rpi'
-            _fcserver_proc = subprocess.Popen(ROOT_DIR + '/bin/' + server)
+
+            here = os.path.dirname(os.path.abspath(__file__))
+            _fcserver_proc = subprocess.Popen(here + '/bin/' + server)
             logging.info(f'Started {server}')
             return _fcserver_proc
 

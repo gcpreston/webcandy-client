@@ -20,6 +20,13 @@ class LightConfig(abc.ABC):
     Abstract base class for an LED lighting configuration.
     """
 
+    @property
+    @abc.abstractmethod
+    def name(self) -> str:
+        """
+        Define a display name for this lighting configuration.
+        """
+
     def __init__(self, num_leds: int = 512, port: int = 7890):
         """
         Initialize a new LightConfig.
@@ -43,7 +50,12 @@ class LightConfig(abc.ABC):
         Generate the next list of colors to push to the Fadecandy client.
         :return: the new colors
         """
-        pass
+
+    @abc.abstractmethod
+    def run(self) -> None:
+        """
+        Run this lighting configuration.
+        """
 
     @staticmethod
     def factory(pattern: str = None, strobe: bool = False, color: str = None,
@@ -121,13 +133,6 @@ class LightConfig(abc.ABC):
         else:
             return light
 
-    @abc.abstractmethod
-    def run(self) -> None:
-        """
-        Run this lighting configuration.
-        """
-        pass
-
 
 class StaticLightConfig(LightConfig, abc.ABC):
     """
@@ -155,7 +160,6 @@ class StaticLightConfig(LightConfig, abc.ABC):
         Define the pattern this lighting configuration should display.
         :return: a list of RGB values to display
         """
-        pass
 
 
 class DynamicLightConfig(LightConfig, abc.ABC):

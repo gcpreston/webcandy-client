@@ -7,6 +7,11 @@ class Scroll(DynamicLightConfig):
     """
     Scroll through a multi-colored line.
     """
+
+    @property
+    def name(self) -> str:
+        return 'scroll'
+
     speed = 8
 
     def __init__(self, colors: List[str], speed: int = None,

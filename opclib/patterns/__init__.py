@@ -4,3 +4,5 @@ from .scroll import Scroll
 from .solid_color import SolidColor
 from .stripes import Stripes
 from .off import Off
+
+__all__ = [Fade, Strobe, Scroll, SolidColor, Stripes, Off]

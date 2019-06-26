@@ -4,7 +4,7 @@ import logging
 import argparse
 
 from opclib.interface import LightConfig
-from webcandy_client.fcserver import FadecandyServer
+from opclib.fcserver import FadecandyServer
 
 
 def _execute(**kwargs) -> None:

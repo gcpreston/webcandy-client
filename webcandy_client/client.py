@@ -1,5 +1,4 @@
 import sys
-import os
 import asyncio
 import json
 import requests
@@ -10,20 +9,8 @@ import websockets
 
 from typing import List
 
+from opclib import pattern_names, FadecandyServer
 from webcandy_client.controller import Controller
-from webcandy_client.fcserver import FadecandyServer
-from webcandy_client.definitions import OPCLIB_DIR
-
-
-def get_pattern_names() -> List[str]:
-    """
-    Get the names of available Fadecandy lighting patterns.
-    :return: a list of names of existing patterns
-    """
-    ignore = {'__pycache__', '__init__.py', 'off.py', 'strobe.py'}
-    return list(map(lambda e: e[:-3],
-                    filter(lambda e: e not in ignore,
-                           os.listdir(OPCLIB_DIR + '/patterns'))))
 
 
 async def start_client(
@@ -129,8 +116,7 @@ def main():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(
-        start_client(host, port, access_token, client_id,
-                     get_pattern_names()))
+        start_client(host, port, access_token, client_id, pattern_names))
 
 
 if __name__ == '__main__':

@@ -6,6 +6,11 @@ class Strobe(DynamicLightConfig):
     """
     Add a strobe effect to a given ``LightConfig``.
     """
+
+    @property
+    def name(self) -> str:
+        return 'strobe'
+
     speed = 20
     _on = True
 

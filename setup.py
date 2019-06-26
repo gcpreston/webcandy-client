@@ -5,7 +5,7 @@ with open('README.md') as readme:
 
 setup(
     name='webcandy-client',
-    version='0.0.1',
+    version='0.0.3',
     author='Graham Preston',
     author_email='graham.preston@gmail.com',
     description='Client-side code for communicating with a Webcandy server.',
@@ -13,7 +13,8 @@ setup(
     long_description_content_type='text/markdown',
     url='https://github.com/gcpreston/webcandy-client',
     packages=find_packages(),
-    include_package_data=True,
+    package_dir={'opclib': 'opclib'},
+    package_data={'opclib': ['bin/fcserver*']},
     zip_safe=False,
     install_requires=[
         'requests',
