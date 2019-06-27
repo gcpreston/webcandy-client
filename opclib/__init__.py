@@ -3,6 +3,6 @@ import opclib.patterns
 
 from opclib.fcserver import FadecandyServer
 
-pattern_names = [p.name for p in opclib.patterns.__all__]
+pattern_names = [str(p.name) for p in opclib.patterns.__all__]
 
 __all__ = opclib.patterns.__all__ + [pattern_names, FadecandyServer]

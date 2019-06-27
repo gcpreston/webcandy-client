@@ -22,7 +22,7 @@ async def start_client(
     """
     Initiate the client connection.
     """
-    ws_addr = f'ws://{host}:{port}'
+    ws_addr = f'ws://{host}:{port}/'
 
     async with websockets.connect(ws_addr) as websocket:
         logging.info(f'Connected to server {ws_addr}')
