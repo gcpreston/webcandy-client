@@ -20,13 +20,6 @@ class LightConfig(abc.ABC):
     Abstract base class for an LED lighting configuration.
     """
 
-    @property
-    @abc.abstractmethod
-    def name(self) -> str:
-        """
-        Define a display name for this lighting configuration.
-        """
-
     def __init__(self, num_leds: int = 512, port: int = 7890):
         """
         Initialize a new LightConfig.
@@ -112,24 +105,27 @@ class LightConfig(abc.ABC):
                 light_config.speed = speed
             return light_config
 
+        # importing patterns at the top of file causes circular import issues
         from . import patterns
 
-        if pattern == 'fade':
+        # TODO: Use getattr here (will most likely require standardization of
+        #   constructor parameter format)
+        if pattern == 'Fade':
             light = set_speed(patterns.Fade(get_color_list()))
-        elif pattern == 'scroll':
+        elif pattern == 'Scroll':
             light = set_speed(patterns.Scroll(get_color_list()))
-        elif pattern == 'solid_color':
+        elif pattern == 'SolidColor':
             light = patterns.SolidColor(get_color())
-        elif pattern == 'stripes':
+        elif pattern == 'Stripes':
             light = patterns.Stripes(get_color_list())
-        elif pattern == 'off':
+        elif pattern == 'Off':
             light = patterns.Off()
         else:
             raise ValueError(f'{pattern!r} is not associated with any lighting'
                              f'configurations')
 
         if strobe:
-            return patterns.Strobe(light)
+            return patterns.modifiers.Strobe(light)
         else:
             return light
 

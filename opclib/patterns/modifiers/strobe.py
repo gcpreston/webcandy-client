@@ -1,16 +1,11 @@
-from ..interface import LightConfig, DynamicLightConfig
-from .solid_color import SolidColor
+from ...interface import LightConfig, DynamicLightConfig
+from ..solid_color import SolidColor
 
 
 class Strobe(DynamicLightConfig):
     """
     Add a strobe effect to a given ``LightConfig``.
     """
-
-    @property
-    def name(self) -> str:
-        return 'strobe'
-
     speed = 20
     _on = True
 

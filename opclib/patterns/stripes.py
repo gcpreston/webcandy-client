@@ -9,10 +9,6 @@ class Stripes(StaticLightConfig):
     Display multiple static colors.
     """
 
-    @property
-    def name(self) -> str:
-        return 'stripes'
-
     def __init__(self, colors: List[str], num_leds: int = 512,
                  port: int = 7890):
         super().__init__(num_leds, port)

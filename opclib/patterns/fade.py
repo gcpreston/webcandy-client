@@ -7,11 +7,6 @@ class Fade(DynamicLightConfig):
     """
     Fade between specified colors.
     """
-
-    @property
-    def name(self) -> str:
-        return 'fade'
-
     _color_index = 0  # index of color being faded towards in self.colors
     _fade_index = 0  # how far we are between two colors [0-9]
     speed = 5

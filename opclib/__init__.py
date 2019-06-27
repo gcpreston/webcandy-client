@@ -1,8 +1,12 @@
 # TODO: Separate opclib, make it a separate library and repository
-import opclib.patterns
+from . import patterns
+from .fcserver import FadecandyServer
 
-from opclib.fcserver import FadecandyServer
+pattern_names = patterns.__all__
+modifier_names = patterns.modifiers.__all__
 
-pattern_names = [str(p.name) for p in opclib.patterns.__all__]
-
-__all__ = opclib.patterns.__all__ + [pattern_names, FadecandyServer]
+__all__ = [
+    'pattern_names',
+    'modifier_names',
+    'FadecandyServer'
+] + patterns.__all__
