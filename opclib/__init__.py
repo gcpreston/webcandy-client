@@ -9,4 +9,4 @@ __all__ = [
     'pattern_names',
     'modifier_names',
     'FadecandyServer'
-] + patterns.__all__
+]
