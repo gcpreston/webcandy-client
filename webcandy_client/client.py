@@ -71,17 +71,17 @@ def get_argument_parser() -> argparse.ArgumentParser:
     p.add_argument('client_id', help='the ID to assign this client')
     p.add_argument('--host', metavar='ADDRESS',
                    help='the address of the server to connect to'
-                        '(dev default: 127.0.0.1)')
+                        '(default: webcandy.io)')
     p.add_argument('--port', metavar='PORT', type=int,
                    help='the port the Webcandy proxy server is running on'
                         '(default: 6543)')
     p.add_argument('--app-port', metavar='PORT', type=int,
                    help='the port the Webcandy app is running on '
-                        '(dev default: 5000)')
+                        '(default: 80)')
     return p
 
 
-def main():
+def main() -> int:
     logging.basicConfig(
         level=logging.INFO,
         format='[%(asctime)s] (%(name)s) %(levelname)s: %(message)s')
@@ -89,10 +89,10 @@ def main():
     parser = get_argument_parser()
     args = parser.parse_args()
 
-    host = args.host or '127.0.0.1'
+    host = args.host or 'webcandy.io'
     port = args.port or 6543
     client_id = args.client_id
-    app_port = args.app_port or 5000
+    app_port = args.app_port or 80
 
     # get access token from username and password
     try:
@@ -102,12 +102,12 @@ def main():
     except requests.exceptions.ConnectionError:
         logger.error('Failed to reach the Webcandy API. Please check the '
                      '--host and --app-port options.')
-        sys.exit(1)
+        return 1
 
     if response.status_code != 200:
         logger.error(f'Received status {response.status_code}: '
                      f'{response.content.decode("utf-8")}')
-        sys.exit(1)
+        return 1
 
     access_token = response.json()['token']
     logger.debug(f'Using token {access_token}')
@@ -122,6 +122,9 @@ def main():
     loop.run_until_complete(
         start_client(host, port, access_token, client_id, pattern_names))
 
+    return 0
+
 
 if __name__ == '__main__':
-    main()
+    status = main()
+    sys.exit(status)
