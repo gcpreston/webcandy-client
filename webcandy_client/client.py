@@ -12,6 +12,9 @@ from typing import List
 from opclib import pattern_names, FadecandyServer
 from webcandy_client.controller import Controller
 
+logger = logging.getLogger('wc-client')
+logger.setLevel(logging.INFO)
+
 
 async def start_client(
         host: str,
@@ -25,14 +28,14 @@ async def start_client(
     ws_addr = f'ws://{host}:{port}/'
 
     async with websockets.connect(ws_addr) as websocket:
-        logging.info(f'Connected to server {ws_addr}')
+        logger.info(f'Connected to server {ws_addr}')
 
         data = json.dumps(
             {'token': token, 'client_id': client_id,
              'patterns': patterns})
         await websocket.send(data)
 
-        logging.info(
+        logger.info(
             f'Sent token, client_id: {client_id!r}, and patterns: {patterns}')
 
         controller = Controller()
@@ -41,20 +44,20 @@ async def start_client(
             async for message in websocket:
                 try:
                     parsed = json.loads(message)
-                    logging.debug(f'Received JSON: {parsed}')
+                    logger.debug(f'Received JSON: {parsed}')
                     controller.run(**parsed)
                 except json.decoder.JSONDecodeError:
                     # TODO: Better formatting of messages sent from server
-                    logging.info(f'Received text: {message}')
+                    logger.info(f'Received text: {message}')
         except websockets.ConnectionClosed as err:
             message = (
                 f'Server closed connection, code: {err.code}, '
                 f'reason: {err.reason or "no reason given"}'
             )
             if err.code in {1000, 1001}:
-                logging.info(message)
+                logger.info(message)
             else:
-                logging.error(message)
+                logger.error(message)
 
 
 def get_argument_parser() -> argparse.ArgumentParser:
@@ -79,8 +82,9 @@ def get_argument_parser() -> argparse.ArgumentParser:
 
 
 def main():
-    logging.basicConfig(level=logging.INFO,
-                        format='[%(asctime)s] %(levelname)s: %(message)s')
+    logging.basicConfig(
+        level=logging.INFO,
+        format='[%(asctime)s] (%(name)s) %(levelname)s: %(message)s')
 
     parser = get_argument_parser()
     args = parser.parse_args()
@@ -96,17 +100,17 @@ def main():
                                  json={'username': args.username,
                                        'password': args.password})
     except requests.exceptions.ConnectionError:
-        logging.error('Failed to reach the Webcandy API. Please check the '
-                      '--host and --app-port options.')
+        logger.error('Failed to reach the Webcandy API. Please check the '
+                     '--host and --app-port options.')
         sys.exit(1)
 
     if response.status_code != 200:
-        logging.error(f'Received status {response.status_code}: '
-                      f'{response.content.decode("utf-8")}')
+        logger.error(f'Received status {response.status_code}: '
+                     f'{response.content.decode("utf-8")}')
         sys.exit(1)
 
     access_token = response.json()['token']
-    logging.debug(f'Using token {access_token}')
+    logger.debug(f'Using token {access_token}')
 
     fc_server = FadecandyServer()
     fc_server.start()  # won't start if another instance is already running

@@ -1,10 +1,13 @@
-import multiprocessing
 import json
+import multiprocessing
 import logging
 import argparse
 
 from opclib.interface import LightConfig
 from opclib.fcserver import FadecandyServer
+
+logger = logging.getLogger('wc-controller')
+logger.setLevel(logging.INFO)
 
 
 def _execute(**kwargs) -> None:
@@ -15,7 +18,10 @@ def _execute(**kwargs) -> None:
     :raises ValueError: if the specified configuration was not given properly
         formatted data
     """
-    LightConfig.factory(**kwargs).run()
+    try:
+        LightConfig.factory(**kwargs).run()
+    except Exception as e:
+        logger.error(e)
 
 
 class Controller:
@@ -32,7 +38,7 @@ class Controller:
 
         :param kwargs: arguments to pass to the specified light config
         """
-        logging.info(f'Attempting to run configuration: {kwargs}')
+        logger.info(f'Attempting to run configuration: {kwargs}')
         self._set_current_proc(target=_execute, kwargs=kwargs)
 
     def _set_current_proc(self, **kwargs) -> None:
@@ -53,7 +59,7 @@ class Controller:
         :return: ``True`` if a process was terminated; ``False`` otherwise
         """
         if self._current_proc and self._current_proc.is_alive():
-            logging.debug(f'Terminating {self._current_proc}')
+            logger.debug(f'Terminating {self._current_proc}')
             self._current_proc.terminate()
             return True
         return False
@@ -63,16 +69,31 @@ def get_argument_parser() -> argparse.ArgumentParser:
     """
     Generate the command-line argument parser.
     """
+    # TODO: Allow for arbitrary command-line argumnets. This would be useful if
+    #   a user wants to add their own lighting configuration and it contains
+    #   new JSON options, that way they don't have to update controller code.
     parser = argparse.ArgumentParser(
-        description='Offline controller for Fadecandy server.')
+        description='Offline controller for Fadecandy server. These arguments '
+                    'are used to either import or generate a JSON lighting '
+                    'configuration which will be run via opclib.')
     parser.add_argument('-f', '--file', metavar='PATH',
-                        help='path of JSON file specifying light configuration')
+                        help='path of JSON file specifying light configuration '
+                             '(other arguments such as --color take precedent)')
+    parser.add_argument('-p', '--pattern', metavar='PATTERN',
+                        help='lighting pattern name to use')
+    parser.add_argument('-s', '--strobe', action='store_true',
+                        help='add a strobe effect')
+    parser.add_argument('-c', '--color', metavar='COLOR',
+                        help='color to use (#RRGGBB format)')
+    parser.add_argument('-cl', '--color-list', nargs='+', metavar='COLOR',
+                        help='list of colors to use (#RRGGBB format)')
     return parser
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG,
-                        format='[%(asctime)s] %(levelname)s: %(message)s')
+    logging.basicConfig(
+        level=logging.INFO,
+        format='[%(asctime)s] (%(name)s) %(levelname)s: %(message)s')
 
     parser = get_argument_parser()
     args = parser.parse_args()
@@ -82,7 +103,9 @@ def main():
         with open(args.file) as file:
             config = json.load(file)
 
-    # TODO: Parse other arbitrary arguments and add them to config
+    for field in ['pattern', 'strobe', 'color', 'color_list']:
+        if getattr(args, field):
+            config[field] = getattr(args, field)
 
     if config:
         server = FadecandyServer()
@@ -91,7 +114,7 @@ def main():
         control = Controller()
         control.run(**config)
         # TODO: Fix conflict when mixing dynamic configs across a separate
-        #     client and controller processes
+        #   client and controller processes
     else:
         parser.print_help()
 
