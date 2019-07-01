@@ -96,7 +96,7 @@ def main() -> int:
 
     # get access token from username and password
     try:
-        response = requests.post(f'http://{host}:{app_port}/api/token',
+        response = requests.post(f'https://{host}:{app_port}/api/token',
                                  json={'username': args.username,
                                        'password': args.password})
     except requests.exceptions.ConnectionError:
