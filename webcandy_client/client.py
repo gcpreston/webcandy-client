@@ -1,10 +1,10 @@
 import sys
 import asyncio
 import json
-import requests
 import signal
 import logging
 import argparse
+import requests
 import websockets
 
 from typing import List
@@ -13,7 +13,7 @@ from opclib import pattern_names, FadecandyServer
 from webcandy_client.controller import Controller
 
 logger = logging.getLogger('wc-client')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 async def start_client(
@@ -27,6 +27,7 @@ async def start_client(
     """
     ws_addr = f'ws://{host}:{port}/'
 
+    logger.info(f'Connecting to {ws_addr}...')
     async with websockets.connect(ws_addr) as websocket:
         logger.info(f'Connected to server {ws_addr}')
 
@@ -92,7 +93,7 @@ def main() -> int:
     host = args.host or 'webcandy.io'
     port = args.port or 6543
     client_id = args.client_id
-    app_port = args.app_port or 80
+    app_port = args.app_port or 443
 
     # get access token from username and password
     try:
