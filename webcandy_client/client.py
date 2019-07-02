@@ -13,7 +13,7 @@ from opclib import pattern_names, FadecandyServer
 from webcandy_client.controller import Controller
 
 logger = logging.getLogger('wc-client')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 async def start_client(

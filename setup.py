@@ -5,7 +5,7 @@ with open('README.md') as readme:
 
 setup(
     name='webcandy-client',
-    version='0.0.7',
+    version='0.0.8',
     author='Graham Preston',
     author_email='graham.preston@gmail.com',
     description='Client-side code for communicating with a Webcandy server.',
