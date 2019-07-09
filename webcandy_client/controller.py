@@ -10,17 +10,21 @@ logger = logging.getLogger('wc-controller')
 logger.setLevel(logging.INFO)
 
 
-def _execute(**kwargs) -> None:
+def _execute(host: str, port: int, **kwargs) -> None:
     """
     Run the specified lighting configuration.
 
+    :param host: the hostname of the Fadecandy server
+    :param port: the port the Fadecandy server is running on
     :param kwargs: keyword arguments to pass to ``LightConfig`` factory
     :raises ValueError: if the specified configuration was not given properly
         formatted data
     """
     try:
-        LightConfig.factory(**kwargs).run()
+        LightConfig.factory(**kwargs).run(host, port)
     except Exception as e:
+        # TODO: Define general opclib exception so that can be caught rather
+        #   than Exception
         logger.error(e)
 
 
@@ -31,15 +35,18 @@ class Controller:
 
     _current_proc: multiprocessing.Process = None
 
-    def run(self, **kwargs) -> None:
+    def run(self, host: int, port: str, **kwargs) -> None:
         """
         Run a lighting configuration . Requires a Fadecandy
         server to be started.
 
+        :param host: the hostname of the Fadecandy server
+        :param port: the port the Fadecandy server is running on
         :param kwargs: arguments to pass to the specified light config
         """
         logger.info(f'Attempting to run configuration: {kwargs}')
-        self._set_current_proc(target=_execute, kwargs=kwargs)
+        self._set_current_proc(target=_execute,
+                               args=(host, port), kwargs=kwargs)
 
     def _set_current_proc(self, **kwargs) -> None:
         """
@@ -76,9 +83,6 @@ def get_argument_parser() -> argparse.ArgumentParser:
         description='Offline controller for Fadecandy server. These arguments '
                     'are used to either import or generate a JSON lighting '
                     'configuration which will be run via opclib.')
-    parser.add_argument('-f', '--file', metavar='PATH',
-                        help='path of JSON file specifying light configuration '
-                             '(other arguments such as --color take precedent)')
     parser.add_argument('-p', '--pattern', metavar='PATTERN',
                         help='lighting pattern name to use')
     parser.add_argument('-s', '--strobe', action='store_true',
@@ -87,6 +91,15 @@ def get_argument_parser() -> argparse.ArgumentParser:
                         help='color to use (#RRGGBB format)')
     parser.add_argument('-cl', '--color-list', nargs='+', metavar='COLOR',
                         help='list of colors to use (#RRGGBB format)')
+    parser.add_argument('-f', '--file', metavar='PATH',
+                        help='path of JSON file specifying light configuration '
+                             '(other configuration arguments take precedent)')
+    parser.add_argument('--host', metavar='ADDRESS',
+                        help='the hostname of the Fadecandy server '
+                             '(default: localhost)')
+    parser.add_argument('--port', metavar='PORT', type=int,
+                        help='the port the Fadecandy server is running on '
+                             '(default: 7890')
     return parser
 
 
@@ -97,6 +110,9 @@ def main():
 
     parser = get_argument_parser()
     args = parser.parse_args()
+
+    host = args.host or 'localhost'
+    port = args.port or 7890
 
     config = dict()
     if args.file:
@@ -112,7 +128,7 @@ def main():
         server.start()  # start Fadecandy server if not already running
 
         control = Controller()
-        control.run(**config)
+        control.run(host, port, **config)
         # TODO: Fix conflict when mixing dynamic configs across a separate
         #   client and controller processes
     else:
