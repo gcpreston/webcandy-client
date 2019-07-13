@@ -35,7 +35,7 @@ class Controller:
 
     _current_proc: multiprocessing.Process = None
 
-    def run(self, host: int, port: str, **kwargs) -> None:
+    def run(self, host: str, port: int, **kwargs) -> None:
         """
         Run a lighting configuration . Requires a Fadecandy
         server to be started.

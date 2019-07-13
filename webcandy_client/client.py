@@ -46,7 +46,7 @@ async def start_client(
                 try:
                     parsed = json.loads(message)
                     logger.debug(f'Received JSON: {parsed}')
-                    controller.run(**parsed)
+                    controller.run(host, port, **parsed)
                 except json.decoder.JSONDecodeError:
                     # TODO: Better formatting of messages sent from server
                     logger.info(f'Received text: {message}')
@@ -79,6 +79,9 @@ def get_argument_parser() -> argparse.ArgumentParser:
     p.add_argument('--app-port', metavar='PORT', type=int,
                    help='the port the Webcandy app is running on '
                         '(default: 80)')
+    p.add_argument('--unsecure', action='store_true',
+                   help='use HTTP instead of HTTPS (required for connecting to '
+                        'localhost for now)')
     return p
 
 
@@ -94,10 +97,11 @@ def main() -> int:
     port = args.port or 6543
     client_id = args.client_id
     app_port = args.app_port or 443
+    protocol = 'http' if args.unsecure else 'https'
 
     # get access token from username and password
     try:
-        response = requests.post(f'https://{host}:{app_port}/api/token',
+        response = requests.post(f'{protocol}://{host}:{app_port}/api/token',
                                  json={'username': args.username,
                                        'password': args.password})
     except requests.exceptions.ConnectionError:
