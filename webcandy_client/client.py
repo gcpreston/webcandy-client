@@ -25,7 +25,9 @@ async def start_client(
     """
     Initiate the client connection.
     """
-    ws_addr = f'ws://{host}:{port}/'
+    ws_addr = f'ws://{host}'
+    if port != 80:
+        ws_addr += f':{port}'
 
     logger.info(f'Connecting to {ws_addr}...')
     async with websockets.connect(ws_addr) as websocket:
@@ -73,12 +75,12 @@ def get_argument_parser() -> argparse.ArgumentParser:
     p.add_argument('--host', metavar='ADDRESS',
                    help='the address of the server to connect to'
                         '(default: webcandy.io)')
-    p.add_argument('--port', metavar='PORT', type=int,
+    p.add_argument('--proxy-port', metavar='PORT', type=int,
                    help='the port the Webcandy proxy server is running on'
-                        '(default: 6543)')
+                        '(default: 80)')
     p.add_argument('--app-port', metavar='PORT', type=int,
                    help='the port the Webcandy app is running on '
-                        '(default: 80)')
+                        '(default: 443)')
     p.add_argument('--unsecure', action='store_true',
                    help='skip SSL verification; necessary when accessing '
                         'development site with self-signed certificate')
@@ -93,8 +95,8 @@ def main() -> int:
     parser = get_argument_parser()
     args = parser.parse_args()
 
-    host = args.host or 'webcandy.io'
-    port = args.port or 6543
+    host = args.host or 'proxy.webcandy.io'
+    proxy_port = args.proxy_port or 80
     client_id = args.client_id
     app_port = args.app_port or 443
     unsecure = args.unsecure
@@ -126,7 +128,7 @@ def main() -> int:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(
-        start_client(host, port, access_token, client_id, pattern_names))
+        start_client(host, proxy_port, access_token, client_id, pattern_names))
 
     return 0
 
