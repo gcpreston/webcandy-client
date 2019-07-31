@@ -20,7 +20,7 @@ async def start_client(
         host: str,
         port: int,
         token: str,
-        client_id: str,
+        client_name: str,
         patterns: List[str]) -> None:
     """
     Initiate the client connection.
@@ -34,12 +34,12 @@ async def start_client(
         logger.info(f'Connected to server')
 
         data = json.dumps(
-            {'token': token, 'client_id': client_id,
+            {'token': token, 'client_name': client_name,
              'patterns': patterns})
         await websocket.send(data)
 
-        logger.info(
-            f'Sent token, client_id: {client_id!r}, and patterns: {patterns}')
+        logger.info(f'Sent token, client_name: {client_name!r}, '
+                    f'and patterns: {patterns}')
 
         controller = Controller()
 
@@ -71,7 +71,7 @@ def get_argument_parser() -> argparse.ArgumentParser:
         description='Webcandy client to connect to a running Webcandy server.')
     p.add_argument('username', help='the username to log in with')
     p.add_argument('password', help='the password to log in with')
-    p.add_argument('client_id', help='the ID to assign this client')
+    p.add_argument('client_name', help='the name to assign this client')
     p.add_argument('--host', metavar='ADDRESS',
                    help='the address of the server to connect to'
                         '(default: webcandy.io)')
@@ -97,7 +97,7 @@ def main() -> int:
 
     host = args.host or 'webcandy.io'
     proxy_port = args.proxy_port or 80
-    client_id = args.client_id
+    client_name = args.client_name
     app_port = args.app_port or 443
     unsecure = args.unsecure
 
@@ -136,7 +136,8 @@ def main() -> int:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(
-        start_client(host, proxy_port, access_token, client_id, pattern_names))
+        start_client(host, proxy_port, access_token, client_name,
+                     pattern_names))
 
     return 0
 
