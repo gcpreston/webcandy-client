@@ -31,7 +31,7 @@ async def start_client(
 
     logger.info(f'Connecting to {ws_addr}...')
     async with websockets.connect(ws_addr) as websocket:
-        logger.info(f'Connected to server {ws_addr}')
+        logger.info(f'Connected to server')
 
         data = json.dumps(
             {'token': token, 'client_id': client_id,
@@ -95,21 +95,29 @@ def main() -> int:
     parser = get_argument_parser()
     args = parser.parse_args()
 
-    host = args.host or 'proxy.webcandy.io'
+    host = args.host or 'webcandy.io'
     proxy_port = args.proxy_port or 80
     client_id = args.client_id
     app_port = args.app_port or 443
     unsecure = args.unsecure
 
     # get access token from username and password
+    if app_port == 443:
+        addr = f'https://{host}/api/token'
+    else:
+        addr = f'https://{host}:{app_port}/api/token'
+
+    logger.info(f'Getting access token from {addr}...')
     try:
-        response = requests.post(f'https://{host}:{app_port}/api/token',
+        response = requests.post(addr,
                                  json={'username': args.username,
                                        'password': args.password},
                                  verify=not unsecure)
+        logger.info(f'Access token received')
     except requests.exceptions.ConnectionError:
-        logger.error('Failed to reach the Webcandy API. Please check the '
-                     '--host and --app-port options.')
+        logger.error(f'Failed to reach the Webcandy API ({addr}). Please make '
+                     'sure the site is online, or check the --host and '
+                     '--app-port options.')
         return 1
 
     if response.status_code != 200:
