@@ -36,6 +36,7 @@ async def start_client(
         data = json.dumps(
             {'token': token, 'client_name': client_name,
              'patterns': patterns})
+        logger.debug(f'Sending {data}')
         await websocket.send(data)
 
         logger.info(f'Sent token, client_name: {client_name!r}, '
@@ -51,7 +52,9 @@ async def start_client(
                     controller.run(host, port, **parsed)
                 except json.decoder.JSONDecodeError:
                     # TODO: Better formatting of messages sent from server
-                    logger.info(f'Received text: {message}')
+                    # don't show data format message to end user
+                    if not message.startswith('[Webcandy]'):
+                        logger.info(f'Received text: {message}')
         except websockets.ConnectionClosed as err:
             message = (
                 f'Server closed connection, code: {err.code}, '
