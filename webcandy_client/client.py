@@ -1,9 +1,11 @@
 import sys
+import signal
+import inspect
 import asyncio
 import json
-import signal
 import logging
 import argparse
+
 import requests
 import websockets
 import opclib.patterns
@@ -29,9 +31,17 @@ def process_config(pattern: Type[LightConfig]) -> Dict:
     else:
         config_type = 'unknown'
 
+    args = inspect.getfullargspec(pattern).args
+    takes = None
+    if 'color' in args:
+        takes = 'color'
+    elif 'color_list' in args:
+        takes = 'color_list'
+
     return {
         'name': pattern.__name__,
-        'type': config_type
+        'type': config_type,
+        'takes': takes
     }
 
 
