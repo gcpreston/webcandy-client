@@ -6,14 +6,44 @@ import logging
 import argparse
 import requests
 import websockets
+import opclib.patterns
 
-from typing import List
+from typing import Type, List, Dict
 
 from opclib import pattern_names, FadecandyServer
+from opclib.interface import LightConfig, StaticLightConfig, DynamicLightConfig
 from webcandy_client.controller import Controller
 
 logger = logging.getLogger('wc-client')
 logger.setLevel(logging.INFO)
+
+
+def process_config(pattern: Type[LightConfig]) -> Dict:
+    """
+    Put necessary information about a `LightConfig` subclass into a dictionary.
+    """
+    if issubclass(pattern, StaticLightConfig):
+        config_type = 'static'
+    elif issubclass(pattern, DynamicLightConfig):
+        config_type = 'dynamic'
+    else:
+        config_type = 'unknown'
+
+    return {
+        'name': pattern.__name__,
+        'type': config_type
+    }
+
+
+def gen_patterns(patterns: List[str]) -> List[Dict]:
+    """
+    Generate the value to go in the "patterns" field of the data to send the
+    server.
+
+    :param patterns: names of available patterns
+    :return: the list of patterns reformatted according to `process_config`
+    """
+    return [process_config(getattr(opclib.patterns, p)) for p in patterns]
 
 
 async def start_client(
@@ -21,7 +51,7 @@ async def start_client(
         port: int,
         token: str,
         client_name: str,
-        patterns: List[str]) -> None:
+        patterns: List[Dict]) -> None:
     """
     Initiate the client connection.
     """
@@ -140,7 +170,7 @@ def main() -> int:
     asyncio.set_event_loop(loop)
     loop.run_until_complete(
         start_client(host, proxy_port, access_token, client_name,
-                     pattern_names))
+                     gen_patterns(pattern_names)))
 
     return 0
 
