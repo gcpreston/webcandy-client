@@ -79,8 +79,7 @@ async def start_client(
         logger.debug(f'Sending {data}')
         await websocket.send(data)
 
-        logger.info(f'Sent token, client_name: {client_name!r}, '
-                    f'and patterns: {patterns}')
+        logger.info(f'Sent data to server')
 
         controller = Controller()
 
@@ -169,7 +168,6 @@ def main() -> int:
         return 1
 
     access_token = response.json()['token']
-    logger.debug(f'Using token {access_token}')
 
     fc_server = FadecandyServer()
     fc_server.start()  # won't start if another instance is already running
