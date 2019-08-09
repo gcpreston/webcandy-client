@@ -24,12 +24,17 @@ def process_config(pattern: Type[LightConfig]) -> Dict:
     """
     Put necessary information about a `LightConfig` subclass into a dictionary.
     """
+    data = {'name': pattern.__name__}
+
     if issubclass(pattern, StaticLightConfig):
         config_type = 'static'
     elif issubclass(pattern, DynamicLightConfig):
         config_type = 'dynamic'
+        data['default_speed'] = pattern.speed
     else:
         config_type = 'unknown'
+
+    data['type'] = config_type
 
     args = inspect.getfullargspec(pattern).args
     takes = None
@@ -38,11 +43,9 @@ def process_config(pattern: Type[LightConfig]) -> Dict:
     elif 'color_list' in args:
         takes = 'color_list'
 
-    return {
-        'name': pattern.__name__,
-        'type': config_type,
-        'takes': takes
-    }
+    data['takes'] = takes
+
+    return data
 
 
 def gen_patterns(patterns: List[str]) -> List[Dict]:
