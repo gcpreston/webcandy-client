@@ -93,7 +93,6 @@ async def start_client(
                     logger.debug(f'Received JSON: {parsed}')
                     controller.run(host, port, **parsed)
                 except json.decoder.JSONDecodeError:
-                    # TODO: Better formatting of messages sent from server
                     # don't show data format message to end user
                     if not message.startswith('[Webcandy]'):
                         logger.info(f'Received text: {message}')

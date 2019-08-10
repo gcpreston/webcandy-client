@@ -22,10 +22,8 @@ def _execute(host: str, port: int, **kwargs) -> None:
     """
     try:
         LightConfig.factory(**kwargs).run(host, port)
-    except Exception as e:
-        # TODO: Define general opclib exception so that can be caught rather
-        #   than Exception
-        logger.error(e)
+    except ValueError as err:
+        logger.error(err)
 
 
 class Controller:
