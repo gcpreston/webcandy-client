@@ -128,6 +128,9 @@ def get_argument_parser() -> argparse.ArgumentParser:
     p.add_argument('--unsecure', action='store_true',
                    help='skip SSL verification; necessary when accessing '
                         'development site with self-signed certificate')
+    p.add_argument('--use-http', action='store_true',
+                   help='use HTTP rather than HTTPS to connect with the '
+                        'server')
     return p
 
 
@@ -139,24 +142,25 @@ def main() -> int:
     parser = get_argument_parser()
     args = parser.parse_args()
 
+    protocol = 'http' if args.use_http else 'https'
+    verify = not args.unsecure
     host = args.host or 'webcandy.io'
     proxy_port = args.proxy_port or 80
-    client_name = args.client_name
     app_port = args.app_port or 443
-    unsecure = args.unsecure
+    client_name = args.client_name
 
     # get access token from username and password
     if app_port == 443:
-        addr = f'https://{host}/api/token'
+        addr = f'{protocol}://{host}/api/token'
     else:
-        addr = f'https://{host}:{app_port}/api/token'
+        addr = f'{protocol}://{host}:{app_port}/api/token'
 
     logger.info(f'Getting access token from {addr}...')
     try:
         response = requests.post(addr,
                                  json={'username': args.username,
                                        'password': args.password},
-                                 verify=not unsecure)
+                                 verify=verify)
         logger.info(f'Access token received')
     except requests.exceptions.ConnectionError:
         logger.error(f'Failed to reach the Webcandy API ({addr}). Please make '
