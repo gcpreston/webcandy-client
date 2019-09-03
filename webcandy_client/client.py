@@ -91,7 +91,7 @@ async def start_client(
                 try:
                     parsed = json.loads(message)
                     logger.debug(f'Received JSON: {parsed}')
-                    controller.run(host, port, **parsed)
+                    controller.run(**parsed)  # use default fcserver host/port
                 except json.decoder.JSONDecodeError:
                     # don't show data format message to end user
                     if not message.startswith('[Webcandy]'):
