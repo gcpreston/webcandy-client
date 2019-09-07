@@ -6,14 +6,9 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-certifi = "==2019.3.9"
-chardet = "==3.0.4"
-idna = "==2.8"
-opclib = "==0.0.4"
-requests = "==2.21.0"
-urllib3 = "==1.24.3"
-websockets = "==7.0"
-webcandy-client = {editable = true,path = "."}
+opclib = "*"
+requests = "*"
+websockets = "*"
 
 [requires]
 python_version = "3.7"
