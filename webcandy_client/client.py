@@ -82,7 +82,7 @@ async def start_client(
         logger.debug(f'Sending {data}')
         await websocket.send(data)
 
-        logger.info(f'Sent data to server')
+        logger.info('Sent data to server')
 
         controller = Controller()
 
@@ -118,7 +118,7 @@ def get_argument_parser() -> argparse.ArgumentParser:
     p.add_argument('client_name', help='the name to assign this client')
     p.add_argument('--host', metavar='ADDRESS',
                    help='the address of the server to connect to'
-                        '(default: webcandy.io)')
+                        '(default: proxy.webcandy.io)')
     p.add_argument('--proxy-port', metavar='PORT', type=int,
                    help='the port the Webcandy proxy server is running on'
                         '(default: 80)')
@@ -144,7 +144,7 @@ def main() -> int:
 
     protocol = 'http' if args.use_http else 'https'
     verify = not args.unsecure
-    host = args.host or 'webcandy.io'
+    host = args.host or 'proxy.webcandy.io'
     proxy_port = args.proxy_port or 80
     app_port = args.app_port or 443
     client_name = args.client_name
