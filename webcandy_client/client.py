@@ -14,7 +14,7 @@ from typing import Type, List, Dict
 
 from opclib import pattern_names, FadecandyServer
 from opclib.interface import LightConfig, StaticLightConfig, DynamicLightConfig
-from controller import Controller
+from webcandy_client.controller import Controller
 
 logger = logging.getLogger('wc-client')
 logger.setLevel(logging.INFO)
