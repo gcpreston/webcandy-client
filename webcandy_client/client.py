@@ -14,7 +14,7 @@ from typing import Type, List, Dict
 
 from opclib import pattern_names, FadecandyServer
 from opclib.interface import LightConfig, StaticLightConfig, DynamicLightConfig
-from webcandy_client.controller import Controller
+from controller import Controller
 
 logger = logging.getLogger('wc-client')
 logger.setLevel(logging.INFO)
@@ -37,13 +37,9 @@ def process_config(pattern: Type[LightConfig]) -> Dict:
     data['type'] = config_type
 
     args = inspect.getfullargspec(pattern).args
-    takes = None
-    if 'color' in args:
-        takes = 'color'
-    elif 'color_list' in args:
-        takes = 'color_list'
+    args.remove('self')
 
-    data['takes'] = takes
+    data['args'] = args
 
     return data
 
