@@ -1,4 +1,5 @@
 import sys
+import time
 import signal
 import inspect
 import asyncio
@@ -68,39 +69,66 @@ async def start_client(
     if port != 80:
         ws_addr += f':{port}'
 
-    logger.info(f'Connecting to {ws_addr}...')
-    async with websockets.connect(ws_addr) as websocket:
-        logger.info(f'Connected to server')
-
-        data = json.dumps(
-            {'token': token, 'client_name': client_name,
-             'patterns': patterns})
-        logger.debug(f'Sending {data}')
-        await websocket.send(data)
-
-        logger.info('Sent data to server')
-
-        controller = Controller()
+    reconnect_attemps = 0
+    while reconnect_attemps < 5:
+        logger.info(f'Connecting to {ws_addr}...')
 
         try:
-            async for message in websocket:
+            async with websockets.connect(ws_addr) as websocket:
+                logger.info(f'Connected to server')
+
+                data = json.dumps(
+                    {'token': token, 'client_name': client_name,
+                     'patterns': patterns})
+                logger.debug(f'Sending {data}')
+                await websocket.send(data)
+
+                logger.info('Sent data to server')
+
+                controller = Controller()
+
                 try:
-                    parsed = json.loads(message)
-                    logger.debug(f'Received JSON: {parsed}')
-                    controller.run(**parsed)  # use default fcserver host/port
-                except json.decoder.JSONDecodeError:
-                    # don't show data format message to end user
-                    if not message.startswith('[Webcandy]'):
-                        logger.info(f'Received text: {message}')
-        except websockets.ConnectionClosed as err:
-            message = (
-                f'Server closed connection, code: {err.code}, '
-                f'reason: {err.reason or "no reason given"}'
-            )
-            if err.code in {1000, 1001}:
-                logger.info(message)
+                    async for message in websocket:
+                        try:
+                            parsed = json.loads(message)
+                            logger.debug(f'Received JSON: {parsed}')
+                            # use default fcserver host/port
+                            controller.run(**parsed)
+                        except json.decoder.JSONDecodeError:
+                            # don't show data format message to end user
+                            if not message.startswith('[Webcandy]'):
+                                logger.info(f'Received text: {message}')
+                except websockets.ConnectionClosed as err:
+                    message = f'Server closed connection, code: {err.code}, '
+                    if err.reason:
+                        message += 'reason: ' + err.reason
+                    else:
+                        message += 'no reason given'
+
+                    if err.code in {1000, 1001}:
+                        logger.info(message)
+                    else:
+                        logger.error(message)
+
+        except ConnectionRefusedError as e:
+            message = f'Failed to connect ({e.errno}), retrying'
+            reconnect_attemps += 1
+
+            wait = 0
+            if reconnect_attemps == 2:
+                wait = 10
+            elif reconnect_attemps == 3:
+                wait = 30
+            elif reconnect_attemps == 4:
+                wait = 60
+
+            if wait:
+                message += f' in {wait}s...'
             else:
-                logger.error(message)
+                message += '...'
+
+            logger.error(message)
+            time.sleep(wait)
 
 
 def get_argument_parser() -> argparse.ArgumentParser:
