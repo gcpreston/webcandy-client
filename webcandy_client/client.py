@@ -111,7 +111,7 @@ async def start_client(
                         logger.error(message)
 
         except ConnectionRefusedError as e:
-            message = f'Failed to connect ({e.errno}), retrying'
+            message = f'Failed to connect [Errno {e.errno}], retrying'
             reconnect_attemps += 1
 
             wait = 0
