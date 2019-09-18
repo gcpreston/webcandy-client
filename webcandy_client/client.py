@@ -1,6 +1,7 @@
 import sys
 import time
 import signal
+import socket
 import inspect
 import asyncio
 import json
@@ -69,8 +70,8 @@ async def start_client(
     if port != 80:
         ws_addr += f':{port}'
 
-    reconnect_attemps = 0
-    while reconnect_attemps < 5:
+    reconnect_attempts = 0
+    while reconnect_attempts < 5:
         logger.info(f'Connecting to {ws_addr}...')
 
         try:
@@ -112,14 +113,14 @@ async def start_client(
 
         except ConnectionRefusedError as e:
             message = f'Failed to connect [Errno {e.errno}], retrying'
-            reconnect_attemps += 1
+            reconnect_attempts += 1
 
             wait = 0
-            if reconnect_attemps == 2:
+            if reconnect_attempts == 2:
                 wait = 10
-            elif reconnect_attemps == 3:
+            elif reconnect_attempts == 3:
                 wait = 30
-            elif reconnect_attemps == 4:
+            elif reconnect_attempts == 4:
                 wait = 60
 
             if wait:
@@ -128,6 +129,29 @@ async def start_client(
                 message += '...'
 
             logger.error(message)
+            time.sleep(wait)
+
+        except socket.gaierror as e:
+            logger.error(f'socket.gaierror: {e}')
+
+            # TODO: Abstract this code fragment
+            message = f'Retrying'
+            reconnect_attempts += 1
+
+            wait = 0
+            if reconnect_attempts == 2:
+                wait = 10
+            elif reconnect_attempts == 3:
+                wait = 30
+            elif reconnect_attempts == 4:
+                wait = 60
+
+            if wait:
+                message += f' in {wait}s...'
+            else:
+                message += '...'
+
+            logger.info(message)
             time.sleep(wait)
 
 
