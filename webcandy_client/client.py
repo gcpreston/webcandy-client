@@ -72,6 +72,7 @@ async def start_client(
 
     reconnect_attempts = 0
     while reconnect_attempts < 5:
+        message = ''
         logger.info(f'Connecting to {ws_addr}...')
 
         try:
@@ -111,48 +112,32 @@ async def start_client(
                     else:
                         logger.error(message)
 
+        except websockets.InvalidStatusCode as e:
+            message += f'websockets.InvalidStatusCode: {e}, retrying'
+
         except ConnectionRefusedError as e:
-            message = f'Failed to connect [Errno {e.errno}], retrying'
-            reconnect_attempts += 1
-
-            wait = 0
-            if reconnect_attempts == 2:
-                wait = 10
-            elif reconnect_attempts == 3:
-                wait = 30
-            elif reconnect_attempts == 4:
-                wait = 60
-
-            if wait:
-                message += f' in {wait}s...'
-            else:
-                message += '...'
-
-            logger.error(message)
-            time.sleep(wait)
+            message += f'Failed to connect [Errno {e.errno}], retrying'
 
         except socket.gaierror as e:
-            logger.error(f'socket.gaierror: {e}')
+            message += f'socket.gaierror: {e}'
 
-            # TODO: Abstract this code fragment
-            message = f'Retrying'
-            reconnect_attempts += 1
+        reconnect_attempts += 1
 
-            wait = 0
-            if reconnect_attempts == 2:
-                wait = 10
-            elif reconnect_attempts == 3:
-                wait = 30
-            elif reconnect_attempts == 4:
-                wait = 60
+        wait = 0
+        if reconnect_attempts == 2:
+            wait = 10
+        elif reconnect_attempts == 3:
+            wait = 30
+        elif reconnect_attempts == 4:
+            wait = 60
 
-            if wait:
-                message += f' in {wait}s...'
-            else:
-                message += '...'
+        if wait:
+            message += f' in {wait}s...'
+        else:
+            message += '...'
 
-            logger.info(message)
-            time.sleep(wait)
+        logger.info(message)
+        time.sleep(wait)
 
 
 def get_argument_parser() -> argparse.ArgumentParser:
