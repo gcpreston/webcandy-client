@@ -112,14 +112,14 @@ async def start_client(
                     else:
                         logger.error(message)
 
-        except websockets.InvalidStatusCode as e:
-            message += f'websockets.InvalidStatusCode: {e}, retrying'
-
         except ConnectionRefusedError as e:
             message += f'Failed to connect [Errno {e.errno}], retrying'
 
         except socket.gaierror as e:
             message += f'socket.gaierror: {e}'
+
+        except websockets.InvalidStatusCode as e:
+            message += f'websockets.InvalidStatusCode: {e}, retrying'
 
         reconnect_attempts += 1
 
@@ -170,7 +170,8 @@ def get_argument_parser() -> argparse.ArgumentParser:
 def main() -> int:
     logging.basicConfig(
         level=logging.INFO,
-        format='[%(asctime)s] (%(name)s) %(levelname)s: %(message)s')
+        # format='[%(asctime)s] (%(name)s) %(levelname)s: %(message)s')
+        format='(%(name)s) %(levelname)s: %(message)s')
 
     parser = get_argument_parser()
     args = parser.parse_args()
