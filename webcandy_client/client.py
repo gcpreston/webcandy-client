@@ -14,8 +14,13 @@ import opclib.patterns
 
 from typing import Type, List, Dict
 
-from opclib import pattern_names, FadecandyServer
-from opclib.interface import LightConfig, StaticLightConfig, DynamicLightConfig
+from opclib import (
+    pattern_names,
+    FadecandyServer,
+    LightConfig,
+    StaticLightConfig,
+    DynamicLightConfig
+)
 from webcandy_client.controller import Controller
 
 logger = logging.getLogger('wc-client')
@@ -92,11 +97,12 @@ async def start_client(
         host: str,
         port: int,
         token: str,
-        client_name: str,
-        patterns: List[Dict]) -> None:
+        client_name: str) -> None:
     """
     Initiate the client connection.
     """
+    patterns = gen_patterns(pattern_names)
+
     ws_addr = f'ws://{host}'
     if port != 80:
         ws_addr += f':{port}'
@@ -256,8 +262,7 @@ def main() -> int:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(
-        start_client(host, proxy_port, token, client_name,
-                     gen_patterns(pattern_names)))
+        start_client(host, proxy_port, token, client_name))
 
     return 0
 
