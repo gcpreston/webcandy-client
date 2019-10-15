@@ -9,8 +9,13 @@ from opclib.fcserver import FadecandyServer
 logger = logging.getLogger('wc-controller')
 logger.setLevel(logging.INFO)
 
+__all__ = [
+    'execute',
+    'Controller'
+]
 
-def _execute(host: str, port: int, **kwargs) -> None:
+
+def execute(host: str, port: int, **kwargs) -> None:
     """
     Run the specified lighting configuration.
 
@@ -43,7 +48,7 @@ class Controller:
         :param kwargs: arguments to pass to the specified light config
         """
         logger.info(f'Attempting to run configuration: {kwargs}')
-        self._set_current_proc(target=_execute,
+        self._set_current_proc(target=execute,
                                args=(host, port), kwargs=kwargs)
 
     def _set_current_proc(self, **kwargs) -> None:

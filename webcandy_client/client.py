@@ -21,6 +21,13 @@ from webcandy_client.controller import Controller
 logger = logging.getLogger('wc-client')
 logger.setLevel(logging.INFO)
 
+__all__ = [
+    'process_config',
+    'gen_patterns',
+    'get_token',
+    'start_client'
+]
+
 
 def process_config(pattern: Type[LightConfig]) -> Dict:
     """
@@ -57,6 +64,30 @@ def gen_patterns(patterns: List[str]) -> List[Dict]:
     return [process_config(getattr(opclib.patterns, p)) for p in patterns]
 
 
+def get_token(addr: str, username: str, password: str,
+              verify: bool = True) -> str:
+    """
+    Retrieve an access token from the Webcandy API.
+
+    :param addr: address of Webcandy server - "http(s)://host:port"
+    :param username: username to use
+    :param password: password to use
+    :param verify: whether to verify https connections
+    :return: an access token for the Webcandy API
+    """
+    response = requests.post(f'{addr}/api/token',
+                             json={'username': username,
+                                   'password': password},
+                             verify=verify)
+
+    if response.status_code != 200:
+        logger.error(f'Received status {response.status_code}: '
+                     f'{response.content.decode("utf-8")}')
+
+    return response.json()['token']
+
+
+# TODO: Get token here so it can refresh if expired
 async def start_client(
         host: str,
         port: int,
@@ -190,38 +221,32 @@ def main() -> int:
     parser = get_argument_parser()
     args = parser.parse_args()
 
+    # create local variables from parsed arguments
     protocol = 'http' if args.use_http else 'https'
     verify = not args.unsecure
     host = args.host or 'proxy.webcandy.io'
     proxy_port = args.proxy_port or 80
     app_port = args.app_port or 443
     client_name = args.client_name
+    username = args.username
+    password = args.password
+
+    if (protocol == 'https' and app_port == 443) or \
+            (protocol == 'http' and app_port == 80):
+        addr = f'{protocol}://{host}'
+    else:
+        addr = f'{protocol}://{host}:{app_port}'
 
     # get access token from username and password
-    if app_port == 443:
-        addr = f'{protocol}://{host}/api/token'
-    else:
-        addr = f'{protocol}://{host}:{app_port}/api/token'
-
     logger.info(f'Getting access token from {addr}...')
     try:
-        response = requests.post(addr,
-                                 json={'username': args.username,
-                                       'password': args.password},
-                                 verify=verify)
-        logger.info(f'Access token received')
+        token = get_token(addr, username, password, verify=verify)
     except requests.exceptions.ConnectionError:
         logger.error(f'Failed to reach the Webcandy API ({addr}). Please make '
                      'sure the site is online, or check the --host and '
                      '--app-port options.')
         return 1
-
-    if response.status_code != 200:
-        logger.error(f'Received status {response.status_code}: '
-                     f'{response.content.decode("utf-8")}')
-        return 1
-
-    access_token = response.json()['token']
+    logger.info(f'Access token received')
 
     fc_server = FadecandyServer()
     fc_server.start()  # won't start if another instance is already running
@@ -231,7 +256,7 @@ def main() -> int:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(
-        start_client(host, proxy_port, access_token, client_name,
+        start_client(host, proxy_port, token, client_name,
                      gen_patterns(pattern_names)))
 
     return 0
