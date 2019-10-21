@@ -216,16 +216,22 @@ def get_argument_parser() -> argparse.ArgumentParser:
     p.add_argument('--use-http', action='store_true',
                    help='use HTTP rather than HTTPS to connect with the '
                         'server')
+    p.add_argument('--time', '-t', action='store_true',
+                   help='whether to display time stamps with log messages')
     return p
 
 
 def main() -> int:
-    logging.basicConfig(
-        level=logging.INFO,
-        format='[%(asctime)s] (%(name)s) %(levelname)s: %(message)s')
-
     parser = get_argument_parser()
     args = parser.parse_args()
+
+    fmt = '(%(name)s) %(levelname)s: %(message)s'
+    if args.time:
+        fmt = '[%(asctime)s] ' + fmt
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format=fmt)
 
     # create local variables from parsed arguments
     protocol = 'http' if args.use_http else 'https'
